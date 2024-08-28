@@ -18,9 +18,12 @@ export class WppconnectService implements OnModuleInit {
 
     this.client.onMessage(async(message) => {
       console.log('Received message:', message);
-      // Aqui você pode enviar os eventos para o seu endpoint
-
+      // Aqui eu envio os eventos para o meu endpoint
+    try {
       await axios.post('http://localhost:3000/whatsapp/events', message);
+      } catch (error) {
+        console.error('Error sending message to endpoint:', error);
+      }
     });
 
     this.client.onStateChange((state) => {

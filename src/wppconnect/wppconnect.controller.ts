@@ -1,4 +1,3 @@
-// src/wppconnect/wppconnect.controller.ts
 import { Controller, Post, Body } from '@nestjs/common';
 import { WppconnectService } from './wppconnect.service';
 
@@ -16,7 +15,9 @@ export class WppconnectController {
   @Post('events')
   async handleEvent(@Body() event: any) {
     console.log('Event received:', event);
-    // Lide com o evento como quiser
-    return { status: 'Event received' };
+
+    // POSSO SALVAR DEPOIS SE EU QUISER O EVENTO NO BANCO
+
+    return { status: 'Evento recebido, ainnn que demaisss' };
   }
 }
