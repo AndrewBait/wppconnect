@@ -22,7 +22,7 @@ export class WppconnectService implements OnModuleInit {
     try {
       await axios.post('http://localhost:3000/whatsapp/events', message);
       } catch (error) {
-        console.error('Error sending message to endpoint:', error);
+        console.error('Error ao enviar a mensagem para o endpoint:', error);
       }
     });
 
