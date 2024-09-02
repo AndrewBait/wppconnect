@@ -11,8 +11,8 @@ async function bootstrap() {
   };
 
   const app = await NestFactory.create(AppModule, { httpsOptions });
-  
-  // Configurandinho do Swagger
+
+  // Configuração do Swagger
   const config = new DocumentBuilder()
     .setTitle('WhatsApp Bot API')
     .setDescription('API para automatizar mensagens e eventos do WhatsApp usando WPPConnect')
