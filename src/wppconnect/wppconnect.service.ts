@@ -1,37 +1,52 @@
-// src/wppconnect/wppconnect.service.ts
 import { Injectable, OnModuleInit } from '@nestjs/common';
 import { create, Whatsapp } from '@wppconnect-team/wppconnect';
 import axios from 'axios';
 
 @Injectable()
-export class WppconnectService implements OnModuleInit {
-  private client: Whatsapp;
+export class WppconnectService {
+  private sessions: Map<string, Whatsapp> = new Map();
 
-  async onModuleInit() {
-    this.client = await create({
-      session: 'whatsapp-session',
+  async createSession(sessionName: string): Promise<void> {
+    if (this.sessions.has(sessionName)) {
+      console.log(`Sessão ${sessionName} já está ativa.`);
+      return;
+    }
+
+    const client = await create({
+      session: sessionName,
       headless: true,
       puppeteerOptions: {
         args: ['--no-sandbox', '--disable-setuid-sandbox'],
       },
     });
 
-    this.client.onMessage(async(message) => {
-      console.log('Received message:', message);
-      // Aqui eu envio os eventos para o meu endpoint
-    try {
-      await axios.post('http://localhost:3000/whatsapp/events', message);
+    this.sessions.set(sessionName, client);
+
+    client.onMessage(async (message) => {
+      console.log(`[${sessionName}] Mensagem recebida:`, message);
+      try {
+        await axios.post('http://localhost:3000/whatsapp/events', { session: sessionName, ...message });
       } catch (error) {
-        console.error('Error ao enviar a mensagem para o endpoint:', error);
+        console.error(`Erro ao enviar a mensagem para o endpoint da sessão ${sessionName}:`, error.message);
       }
     });
 
-    this.client.onStateChange((state) => {
-      console.log('State changed:', state);
+    client.onStateChange((state) => {
+      console.log(`[${sessionName}] Estado alterado:`, state);
     });
+
+    console.log(`Sessão ${sessionName} criada com sucesso.`);
   }
 
-  async sendMessage(to: string, message: string) {
-    await this.client.sendText(to, message);
+  async sendMessage(sessionName: string, to: string, message: string): Promise<void> {
+    const client = this.sessions.get(sessionName);
+    if (!client) {
+      throw new Error(`Sessão ${sessionName} não encontrada.`);
+    }
+    await client.sendText(to, message);
+  }
+
+  getSessions(): string[] {
+    return Array.from(this.sessions.keys());
   }
 }
