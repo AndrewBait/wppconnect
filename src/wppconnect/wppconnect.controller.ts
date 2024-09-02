@@ -1,9 +1,9 @@
-// src/wppconnect/wppconnect.controller.ts
-import { Controller, Post, Body, Get, Param } from '@nestjs/common';
+import { Controller, Post, Body, Get, Param, Delete, Res } from '@nestjs/common';
 import { WppconnectService } from './wppconnect.service';
 import { ApiTags, ApiOperation, ApiBody } from '@nestjs/swagger';
 import { SendMessageDto } from './dto/send-message.dto';
 import { EventDto } from './dto/event.dto';
+import { Response } from 'express';
 
 @ApiTags('WhatsApp')
 @Controller('whatsapp')
@@ -16,6 +16,26 @@ export class WppconnectController {
     await this.wppconnectService.createSession(sessionName);
     return { status: `Sessão ${sessionName} criada com sucesso` };
   }
+
+  @Get('get-qr-code/:sessionName')
+  @ApiOperation({ summary: 'Obter o QR Code de uma sessão do WhatsApp' })
+  async getQRCode(@Param('sessionName') sessionName: string, @Res() res: Response) {
+    try {
+      const qrCodeImage = await this.wppconnectService.getQRCodeImage(sessionName);
+      res.setHeader('Content-Type', 'image/png'); // Define o tipo de resposta como imagem PNG
+      res.send(qrCodeImage); // Envia a imagem como resposta
+    } catch (error) {
+      res.status(404).json({ message: error.message });
+    }
+  }
+
+  @Delete('remove-session/:sessionName')
+  @ApiOperation({ summary: 'Remover uma sessão do WhatsApp' })
+  async removeSession(@Param('sessionName') sessionName: string) {
+    await this.wppconnectService.removeSession(sessionName);
+    return { status: `Sessão ${sessionName} removida com sucesso` };
+  }
+
 
   @Post('send-message/:sessionName')
   @ApiOperation({ summary: 'Enviar uma mensagem via WhatsApp em uma sessão específica' })
