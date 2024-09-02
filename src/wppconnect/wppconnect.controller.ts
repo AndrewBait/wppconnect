@@ -77,4 +77,18 @@ export class WppconnectController {
   async getSessions() {
     return this.wppconnectService.getSessions();
   }
+
+  @Get('status/:sessionName')
+  @ApiOperation({ summary: 'Obter o status de uma sessão do WhatsApp' })
+  async getStatus(@Param('sessionName') sessionName: string) {
+    const status = await this.wppconnectService.getSessionStatus(sessionName);
+    return { status };
+  }
+
+  @Post('reconnect/:sessionName')
+  @ApiOperation({ summary: 'Reconectar uma sessão do WhatsApp' })
+  async reconnectSession(@Param('sessionName') sessionName: string) {
+    await this.wppconnectService.reconnectSession(sessionName);
+    return { status: `Sessão ${sessionName} reconectada com sucesso` };
+  }
 }

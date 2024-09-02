@@ -138,4 +138,26 @@ export class WppconnectService {
   getSessions(): string[] {
     return Array.from(this.sessions.keys());
   }
+
+  async getSessionStatus(sessionName: string): Promise<string> {
+    const client = this.sessions.get(sessionName);
+    if (!client) {
+      return `Sessão ${sessionName} não encontrada.`;
+    }
+    return await client.getConnectionState(); // Retorna o estado de conexão da sessão
+  }
+
+  async reconnectSession(sessionName: string): Promise<void> {
+    const client = this.sessions.get(sessionName);
+    if (!client) {
+      throw new Error(`Sessão ${sessionName} não encontrada.`);
+    }
+
+    await client.close(); // Fecha a sessão atual
+    this.sessions.delete(sessionName); // Remove do mapa de sessões
+
+    await this.createSession(sessionName); // Cria uma nova sessão com o mesmo nome
+  }
+
+  
 }
