@@ -86,7 +86,7 @@ export class WppconnectService {
   `.trim(); // Remove espaços em branco das extremidades
   }
 
-  
+
   async removeSession(sessionName: string): Promise<void> {
     const client = this.sessions.get(sessionName);
     if (!client) {
@@ -111,7 +111,28 @@ export class WppconnectService {
     if (!client) {
       throw new Error(`Sessão ${sessionName} não encontrada.`);
     }
-    await client.sendText(to, message);
+  
+    try {
+      await client.sendText(to, message);
+  
+      // Use um identificador mais claro e consistente para o remetente
+      const from = `${sessionName}@c.us`; // Exemplo de como pegar o identificador da sessão
+  
+      const formattedMessage = this.formatMessage({
+        sessionName,
+        from,
+        to,
+        body: message,
+        timestamp: new Date().toLocaleString(),
+        type: 'chat',
+        senderName: 'Eu',
+      });
+  
+      this.newMessageSubject.next(formattedMessage); // Emitir mensagem enviada para SSE
+    } catch (error) {
+      console.error(`Erro ao enviar mensagem na sessão ${sessionName}:`, error.message);
+      throw new Error(`Erro ao enviar mensagem: ${error.message}`);
+    }
   }
 
   getSessions(): string[] {
