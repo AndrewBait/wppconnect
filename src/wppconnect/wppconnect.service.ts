@@ -1,12 +1,14 @@
 import { Injectable } from '@nestjs/common';
 import { create, Whatsapp } from '@wppconnect-team/wppconnect';
 import axios from 'axios';
-import * as QRCode from 'qrcode';
+import { Subject } from 'rxjs';
+
 
 @Injectable()
 export class WppconnectService {
   private sessions: Map<string, Whatsapp> = new Map();
   private qrCodes: Map<string, Buffer> = new Map();
+  private newMessageSubject = new Subject<any>();
 
   async createSession(sessionName: string): Promise<void> {
     if (this.sessions.has(sessionName)) {
@@ -40,8 +42,22 @@ export class WppconnectService {
 
     client.onMessage(async (message) => {
       console.log(`[${sessionName}] Mensagem recebida:`, message);
+
+      // Filtrar e formatar informações relevantes
+      const formattedMessage = this.formatMessage({
+        sessionName,
+        from: message.from,
+        to: message.to,
+        body: message.body,
+        timestamp: new Date(message.timestamp * 1000).toLocaleString(), // Converte o timestamp para um formato legível
+        type: message.type,
+        senderName: message.sender?.name,
+      });
+
+      this.newMessageSubject.next(formattedMessage); // Emitir mensagem filtrada para SSE
+
       try {
-        await axios.post('http://localhost:3000/whatsapp/events', { session: sessionName, ...message });
+        await axios.post('http://localhost:3000/whatsapp/events', formattedMessage);
       } catch (error) {
         console.error(`Erro ao enviar a mensagem para o endpoint da sessão ${sessionName}:`, error.message);
       }
@@ -54,6 +70,23 @@ export class WppconnectService {
     console.log(`Sessão ${sessionName} criada com sucesso.`);
   }
 
+  onNewMessage() {
+    return this.newMessageSubject.asObservable(); // Retorna o fluxo observável para SSE
+  }
+
+  private formatMessage(message: any): string {
+    return `
+  Sessão: ${message.sessionName}
+  De: ${message.from}
+  Para: ${message.to}
+  Mensagem: ${message.body}
+  Tipo: ${message.type}
+  Nome do Remetente: ${message.senderName}
+  Data e Hora: ${message.timestamp}
+  `.trim(); // Remove espaços em branco das extremidades
+  }
+
+  
   async removeSession(sessionName: string): Promise<void> {
     const client = this.sessions.get(sessionName);
     if (!client) {

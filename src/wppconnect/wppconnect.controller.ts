@@ -1,14 +1,32 @@
-import { Controller, Post, Body, Get, Param, Delete, Res } from '@nestjs/common';
+import { Controller, Post, Body, Get, Param, Delete, Res, Sse } from '@nestjs/common';
 import { WppconnectService } from './wppconnect.service';
 import { ApiTags, ApiOperation, ApiBody } from '@nestjs/swagger';
 import { SendMessageDto } from './dto/send-message.dto';
 import { EventDto } from './dto/event.dto';
 import { Response } from 'express';
+import { Observable, Subject } from 'rxjs';
+import { map } from 'rxjs/operators';
+
 
 @ApiTags('WhatsApp')
 @Controller('whatsapp')
 export class WppconnectController {
-  constructor(private readonly wppconnectService: WppconnectService) {}
+  private messageSubject = new Subject<any>(); // Sujeito para gerenciar mensagens novas
+
+  constructor(private readonly wppconnectService: WppconnectService) {
+    // Observa novas mensagens e emite para o fluxo SSE
+    this.wppconnectService.onNewMessage().subscribe((message) => {
+      this.messageSubject.next(message);
+    });
+  }
+
+  @Sse('stream-messages')
+  @ApiOperation({ summary: 'Stream de novas mensagens via SSE' })
+  streamMessages(): Observable<any> {
+    return this.messageSubject.asObservable().pipe(
+      map((message) => ({ data: message }))
+    );
+  }
 
   @Post('create-session/:sessionName')
   @ApiOperation({ summary: 'Criar uma nova sessão do WhatsApp' })
