@@ -1,10 +1,17 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import * as fs from 'fs';
+
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+  const httpsOptions = {
+    key: fs.readFileSync('server.key'), 
+    cert: fs.readFileSync('server.cert'), 
+  };
 
+  const app = await NestFactory.create(AppModule, { httpsOptions });
+  
   // Configurandinho do Swagger
   const config = new DocumentBuilder()
     .setTitle('WhatsApp Bot API')
