@@ -23,9 +23,8 @@ export class WppconnectService {
         args: ['--no-sandbox', '--disable-setuid-sandbox'],
       },
       catchQR: (base64Qr, asciiQR) => {
-        console.log(`QR Code recebido para sessão ${sessionName}: ${asciiQR}`);
+        console.log(`QR Code recebido para sessão ${sessionName}: ${asciiQR}`);        
         
-        // Converte o QR code base64 para um buffer de imagem
         const matches = base64Qr.match(/^data:([A-Za-z-+/]+);base64,(.+)$/);
         if (!matches || matches.length !== 3) {
           console.error('String base64 inválida para QR Code');
@@ -43,13 +42,13 @@ export class WppconnectService {
     client.onMessage(async (message) => {
       console.log(`[${sessionName}] Mensagem recebida:`, message);
 
-      // Filtrar e formatar informações relevantes
+      // Filtrar pra entender essa desgraca
       const formattedMessage = this.formatMessage({
         sessionName,
         from: message.from,
         to: message.to,
         body: message.body,
-        timestamp: new Date(message.timestamp * 1000).toLocaleString(), // Converte o timestamp para um formato legível
+        timestamp: new Date(message.timestamp * 1000).toLocaleString(), // Converte o timestamp p entender essa merdinha
         type: message.type,
         senderName: message.sender?.name,
       });
@@ -71,7 +70,7 @@ export class WppconnectService {
   }
 
   onNewMessage() {
-    return this.newMessageSubject.asObservable(); // Retorna o fluxo observável para SSE
+    return this.newMessageSubject.asObservable(); // Retorna o fluxo observável para SSE pra entender essa porrinha
   }
 
   private formatMessage(message: any): string {
@@ -83,7 +82,7 @@ export class WppconnectService {
   Tipo: ${message.type}
   Nome do Remetente: ${message.senderName}
   Data e Hora: ${message.timestamp}
-  `.trim(); // Remove espaços em branco das extremidades
+  `.trim(); 
   }
 
 
@@ -92,7 +91,7 @@ export class WppconnectService {
     if (!client) {
       throw new Error(`Sessão ${sessionName} não encontrada.`);
     }
-    await client.close(); // Fecha a sessão
+    await client.close(); 
     this.sessions.delete(sessionName); // Remove do mapa de sessões
     this.qrCodes.delete(sessionName); // Remove o QR code armazenado, se houver
     console.log(`Sessão ${sessionName} removida com sucesso.`);
@@ -113,10 +112,9 @@ export class WppconnectService {
     }
   
     try {
-      await client.sendText(to, message);
-  
-      // Use um identificador mais claro e consistente para o remetente
-      const from = `${sessionName}@c.us`; // Exemplo de como pegar o identificador da sessão
+      await client.sendText(to, message);  
+      
+      const from = `${sessionName}@c.us`; 
   
       const formattedMessage = this.formatMessage({
         sessionName,
@@ -153,7 +151,7 @@ export class WppconnectService {
       throw new Error(`Sessão ${sessionName} não encontrada.`);
     }
 
-    await client.close(); // Fecha a sessão atual
+    await client.close(); 
     this.sessions.delete(sessionName); // Remove do mapa de sessões
 
     await this.createSession(sessionName); // Cria uma nova sessão com o mesmo nome

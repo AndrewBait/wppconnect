@@ -11,7 +11,7 @@ import { map } from 'rxjs/operators';
 @ApiTags('WhatsApp')
 @Controller('whatsapp')
 export class WppconnectController {
-  private messageSubject = new Subject<any>(); // Sujeito para gerenciar mensagens novas
+  private messageSubject = new Subject<any>(); //gerencia mensagens novas
 
   constructor(private readonly wppconnectService: WppconnectService) {
     // Observa novas mensagens e emite para o fluxo SSE
@@ -40,7 +40,7 @@ export class WppconnectController {
   async getQRCode(@Param('sessionName') sessionName: string, @Res() res: Response) {
     try {
       const qrCodeImage = await this.wppconnectService.getQRCodeImage(sessionName);
-      res.setHeader('Content-Type', 'image/png'); // Define o tipo de resposta como imagem PNG
+      res.setHeader('Content-Type', 'image/png'); 
       res.send(qrCodeImage); // Envia a imagem como resposta
     } catch (error) {
       res.status(404).json({ message: error.message });
@@ -64,6 +64,7 @@ export class WppconnectController {
     return { status: 'Mensagem enviada papai' };
   }
 
+
   @Post('events')
   @ApiOperation({ summary: 'Receber eventos do WhatsApp' })
   @ApiBody({ type: EventDto })
@@ -71,6 +72,7 @@ export class WppconnectController {
     console.log('Evento Recebido:', event);
     return { status: 'Evento recebido, ainnn que demaisss' };
   }
+
 
   @Get('sessions')
   @ApiOperation({ summary: 'Listar todas as sessões ativas' })

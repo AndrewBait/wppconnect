@@ -5,7 +5,7 @@ import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
-  // Configuração do Swagger
+  // Configurandinho do Swagger
   const config = new DocumentBuilder()
     .setTitle('WhatsApp Bot API')
     .setDescription('API para automatizar mensagens e eventos do WhatsApp usando WPPConnect')
