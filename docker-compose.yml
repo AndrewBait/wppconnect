@@ -1,0 +1,13 @@
+version: '3'
+
+services:
+  app:
+    build: .
+    container_name: wppconnect_nestjs
+    ports:
+      - "3000:3000" # Mapeia a porta 3000 do contêiner para a porta 3000 do host
+    volumes:
+      - .:/app # Monta o diretório atual como um volume no contêiner
+    environment:
+      - NODE_ENV=production
+    restart: unless-stopped
