@@ -9,5 +9,4 @@ export class EventDto {
 
   @ApiProperty({ example: '5512997886488', description: 'Número de telefone do remetente no formato internacional.' })
   from: string;
-
 }
