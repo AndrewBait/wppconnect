@@ -4,26 +4,18 @@ import { ApiTags, ApiOperation, ApiBody } from '@nestjs/swagger';
 import { SendMessageDto } from './dto/send-message.dto';
 import { EventDto } from './dto/event.dto';
 import { Response } from 'express';
-import { Observable, Subject, merge } from 'rxjs';
+import { Observable, merge } from 'rxjs';
 import { map } from 'rxjs/operators';
 
 @ApiTags('WhatsApp')
 @Controller('whatsapp')
 export class WppconnectController {
-  private messageSubject = new Subject<any>(); // Gerencia mensagens novas
-  private eventSubject = new Subject<any>();   // Gerencia outros eventos
   private eventLog: any[] = []; // Adicionado: Log para armazenar eventos
 
-
   constructor(private readonly wppconnectService: WppconnectService) {
-    // Observa novas mensagens e emite para o fluxo SSE
-    this.wppconnectService.onNewMessage().subscribe((message) => {
-      this.messageSubject.next(message);
-    });
-
-    // Observa outros eventos e emite para o fluxo SSE
-    this.wppconnectService.onNewEvent().subscribe((event) => {
-      this.eventSubject.next(event);
+    // Observa o Subject de eventos diretamente do serviço
+    this.wppconnectService['eventSubject'].subscribe((event) => {
+      this.eventLog.push(event); // Armazena o evento no log
     });
   }
 
@@ -31,11 +23,11 @@ export class WppconnectController {
   @Sse('stream-events')
   @ApiOperation({ summary: 'Stream de novas mensagens e eventos via SSE' })
   streamEvents(): Observable<any> {
-    return merge(
-      this.messageSubject.asObservable().pipe(map((message) => ({ type: 'message', data: message }))),
-      this.eventSubject.asObservable().pipe(map((event) => ({ type: 'event', data: event })))
+    return this.wppconnectService['eventSubject'].asObservable().pipe(
+      map((event) => ({ type: 'event', data: event }))
     );
   }
+
 
   @Get('events-log')
   @ApiOperation({ summary: 'Obter o log de todos os eventos do WhatsApp' })
@@ -83,9 +75,9 @@ export class WppconnectController {
   @ApiBody({ type: EventDto })
   async handleEvent(@Body() event: EventDto) {
     console.log('Evento Recebido:', event);
-    this.eventSubject.next(event); // Envia o evento para o stream SSE
-    this.eventLog.push(event); // Adicionado: Armazena o evento no log
-    return { status: 'Evento recebido, ainnn que demaisss' };
+    this.wppconnectService['eventSubject'].next(event); // Envia o evento para o stream SSE
+    this.eventLog.push(event); // Armazena o evento no log
+    return { status: 'Evento recebido com sucesso' };
   }
   
   @Get('sessions')
