@@ -1,33 +1,31 @@
-import { Controller, Post, Body, Get, Param, Delete, Res, Sse, UseGuards } from '@nestjs/common';
+import { Controller, Post, Body, Get, Param, Delete, Res, Sse } from '@nestjs/common'; // Certifique-se de importar Sse
 import { WppconnectService } from './wppconnect.service';
-import { ApiTags, ApiOperation, ApiBody } from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiBody, ApiExcludeEndpoint } from '@nestjs/swagger'; // Importa ApiExcludeEndpoint
 import { SendMessageDto } from './dto/send-message.dto';
 import { EventDto } from './dto/event.dto';
 import { Response } from 'express';
-import { Observable, merge } from 'rxjs';
-import { map } from 'rxjs/operators';
+import { Observable } from 'rxjs';  // Importa Observable de 'rxjs'
+import { map, merge, share } from 'rxjs/operators';  // Importa operadores necessários do RxJS
 
 @ApiTags('WhatsApp')
 @Controller('whatsapp')
 export class WppconnectController {
-  private eventLog: any[] = []; // Adicionado: Log para armazenar eventos
+  private eventLog: any[] = []; // Log para armazenar eventos
 
   constructor(private readonly wppconnectService: WppconnectService) {
-    // Observa o Subject de eventos diretamente do serviço
-    this.wppconnectService['eventSubject'].subscribe((event) => {
+    this.wppconnectService.getEventObservable().subscribe((event) => {
       this.eventLog.push(event); // Armazena o evento no log
     });
   }
 
 
   @Sse('stream-events')
-  @ApiOperation({ summary: 'Stream de novas mensagens e eventos via SSE' })
+  @ApiExcludeEndpoint()
   streamEvents(): Observable<any> {
-    return this.wppconnectService['eventSubject'].asObservable().pipe(
+    return this.wppconnectService.getEventObservable().pipe(
       map((event) => ({ type: 'event', data: event }))
     );
   }
-
 
   @Get('events-log')
   @ApiOperation({ summary: 'Obter o log de todos os eventos do WhatsApp' })
@@ -48,7 +46,7 @@ export class WppconnectController {
     try {
       const qrCodeImage = await this.wppconnectService.getQRCodeImage(sessionName);
       res.setHeader('Content-Type', 'image/png'); 
-      res.send(qrCodeImage); // Envia a imagem como resposta
+      res.send(qrCodeImage);
     } catch (error) {
       res.status(404).json({ message: error.message });
     }
@@ -67,15 +65,15 @@ export class WppconnectController {
   async sendMessage(@Param('sessionName') sessionName: string, @Body() body: SendMessageDto) {
     const { to, message } = body;
     await this.wppconnectService.sendMessage(sessionName, to, message);
-    return { status: 'Mensagem enviada papai' };
+    return { status: 'Mensagem enviada com sucesso' };
   }
 
   @Post('events')
+  @ApiExcludeEndpoint()
   @ApiOperation({ summary: 'Receber eventos do WhatsApp' })
   @ApiBody({ type: EventDto })
   async handleEvent(@Body() event: EventDto) {
-    console.log('Evento Recebido:', event);
-    this.wppconnectService['eventSubject'].next(event); // Envia o evento para o stream SSE
+    this.wppconnectService.emitEvent(event); // Usa o método do serviço para emitir eventos
     this.eventLog.push(event); // Armazena o evento no log
     return { status: 'Evento recebido com sucesso' };
   }
@@ -100,10 +98,8 @@ export class WppconnectController {
     return { status: `Sessão ${sessionName} reconectada com sucesso` };
   }
 
-  // Novos endpoints para enviar diferentes tipos de mensagens como sendContactVcard, sendLocation, sendLinkPreview etc.
-
   @Post('send-contact-vcard/:sessionName')
-  @ApiOperation({ summary: 'Enviar contato VCard via WhatsApp' })
+  @ApiExcludeEndpoint()  // Remove da documentação Swagger
   async sendContactVcard(@Param('sessionName') sessionName: string, @Body() body: any) {
     const { to, contact, name } = body;
     await this.wppconnectService.sendContactVcard(sessionName, to, contact, name);
@@ -111,7 +107,7 @@ export class WppconnectController {
   }
 
   @Post('send-location/:sessionName')
-  @ApiOperation({ summary: 'Enviar localização via WhatsApp' })
+  @ApiExcludeEndpoint()  // Remove da documentação Swagger
   async sendLocation(@Param('sessionName') sessionName: string, @Body() body: any) {
     const { to, lat, long, name } = body;
     await this.wppconnectService.sendLocation(sessionName, to, lat, long, name);

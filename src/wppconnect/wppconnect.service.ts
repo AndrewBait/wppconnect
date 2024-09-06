@@ -1,14 +1,14 @@
 import { Injectable } from '@nestjs/common';
 import { create, Whatsapp } from '@wppconnect-team/wppconnect';
 import axios from 'axios';
-import { Subject } from 'rxjs';
+import { ReplaySubject, Observable } from 'rxjs';
+import { share } from 'rxjs/operators';
 
 @Injectable()
 export class WppconnectService {
   private sessions: Map<string, Whatsapp> = new Map();
   private qrCodes: Map<string, Buffer> = new Map();
-  private newMessageSubject = new Subject<any>();
-  private eventSubject = new Subject<any>();
+  private eventSubject = new ReplaySubject<any>(1); // Usa ReplaySubject para reemitir o último evento para novos assinantes
   private eventCache: Map<string, any> = new Map();
 
   async createSession(sessionName: string): Promise<void> {
@@ -52,7 +52,7 @@ export class WppconnectService {
     const formattedEvent = this.formatEvent(eventType, sessionName, event);
     console.log(`[${sessionName}] Evento recebido:`, formattedEvent);
 
-    this.eventSubject.next(formattedEvent);
+    this.emitEvent(formattedEvent); // Usando o método emitEvent para emitir o evento
     this.sendEvent(formattedEvent);
   }
 
@@ -331,5 +331,14 @@ export class WppconnectService {
     this.sessions.delete(sessionName); // Remove do mapa de sessões
 
     await this.createSession(sessionName); // Cria uma nova sessão com o mesmo nome
+  }
+
+  // Novos métodos adicionados
+  getEventObservable(): Observable<any> {
+    return this.eventSubject.asObservable().pipe(share());
+  }
+
+  emitEvent(event: any): void {
+    this.eventSubject.next(event);
   }
 }
